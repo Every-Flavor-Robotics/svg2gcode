@@ -1,0 +1,21 @@
+[package]
+name = "optimizer"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+svg2gcode = { version = "0.2.3", features = ["serde"], path = "../lib" }
+env_logger = { version = "0", default-features = false, features = ["atty", "termcolor", "humantime"] }
+log = "0"
+g-code = "0.4.2"
+codespan-reporting = "0.11"
+structopt = "0.3"
+roxmltree = "0.19"
+svgtypes = "0.13"
+serde_json = "1"
+
+[[bin]]
+name = "gcode-optimizer"
+path = "src/main.rs"

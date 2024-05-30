@@ -2,8 +2,8 @@
 members = [
     "lib",
     "cli",
-    "web"
-]
+    "web",
+    "optimizer"]
 default-members = [
     "cli"
 ]
