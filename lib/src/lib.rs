@@ -13,9 +13,12 @@ mod postprocess;
 /// Provides an interface for drawing lines in G-Code
 /// This concept is referred to as [Turtle graphics](https://en.wikipedia.org/wiki/Turtle_graphics).
 mod turtle;
+// Provides tools for optimizing G-Code
+mod optimizer;
 
 pub use converter::{svg2program, ConversionConfig, ConversionOptions};
 pub use machine::{Machine, MachineConfig, SupportedFunctionality};
+pub use optimizer::tsp_solver;
 pub use postprocess::PostprocessConfig;
 pub use turtle::Turtle;
 
