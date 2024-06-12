@@ -15,6 +15,8 @@ structopt = "0.3"
 roxmltree = "0.19"
 svgtypes = "0.13"
 serde_json = "1"
+serde = { version = "1", features = ["derive"] }
+bincode = "1.3"
 
 [[bin]]
 name = "gcode-optimizer"

@@ -9,7 +9,6 @@ use std::time::{Duration, Instant}; // Import the GCodeBlock and GCodePoint stru
 
 pub struct GeneticAlgorithm {
     population_size: usize,
-    elite_rate: f64,
     crossover_probability: f64,
     mutation_probability: f64,
     unchanged_gens: usize,
@@ -31,8 +30,7 @@ pub struct GeneticAlgorithm {
 impl GeneticAlgorithm {
     pub fn new() -> Self {
         GeneticAlgorithm {
-            population_size: 40,
-            elite_rate: 0.3,
+            population_size: 50,
             crossover_probability: 0.9,
             mutation_probability: 0.07,
             unchanged_gens: 0,
@@ -52,8 +50,8 @@ impl GeneticAlgorithm {
         }
     }
 
-    pub fn init(&mut self, points: Vec<GCodeBlock>) -> () {
-        self.points = points;
+    pub fn init(&mut self, points: &[GCodeBlock]) -> () {
+        self.points = points.to_vec();
 
         self.compute_distances(); // You'll need to implement this method
 
@@ -90,6 +88,10 @@ impl GeneticAlgorithm {
 
     pub fn get_unchanged_gens(&self) -> usize {
         self.unchanged_gens
+    }
+
+    pub fn get_best_solution(&self) -> Vec<usize> {
+        self.best.clone()
     }
 }
 
@@ -148,6 +150,11 @@ impl GeneticAlgorithm {
             .iter()
             .map(|&v| v / fitness_sum)
             .collect();
+
+        // Calculate the cumulative sum of the roulette values
+        for i in 1..self.roulette.len() {
+            self.roulette[i] += self.roulette[i - 1];
+        }
     }
 
     /// Select an individual from the population using roulette wheel selection.
@@ -386,6 +393,7 @@ impl GeneticAlgorithm {
                 break (m, n);
             }
         };
+
         // Reverse the subset of elements
         individual[m..n].reverse();
 
@@ -419,6 +427,8 @@ impl GeneticAlgorithm {
         // Generate a random individual
         let mut rng = rand::thread_rng();
         let mut individual: Vec<usize> = (0..num_points).collect();
+
+        // Manually intialize the individual
         individual.shuffle(&mut rng);
 
         individual
@@ -576,6 +586,24 @@ impl GeneticAlgorithm {
                     + self.points[individual[closest_index]].len()
                     - nearest_point_to_next;
 
+                // if (i == 10) {
+                //     println!("min_distance {}", min_distance);
+                //     println!("closest_index {}", closest_index);
+                //     let test = self.points[individual[closest_index]].len() - nearest_point_to_next;
+
+                //     println!("test {}", test);
+                //     println!("backtrack_cost {}", backtrack_cost);
+                //     println!("individual.len() {}", individual.len());
+                //     println!("self.num_total_points {}", self.num_total_points);
+
+                //     let value = 100.0 * min_distance / individual.len() as f64
+                //         + 40.0 * backtrack_cost as f64 / self.num_total_points as f64;
+
+                //     println!("value {}", value);
+
+                //     panic!("hi");
+                // }
+
                 // Calculate the sum for this iteration
                 100.0 * min_distance / individual.len() as f64
                     + 40.0 * backtrack_cost as f64 / self.num_total_points as f64
@@ -603,26 +631,33 @@ impl GeneticAlgorithm {
                     .enumerate()
                     .map(move |(j, point_2)| (distance(point_1, point_2), i, j))
             })
-            .min_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(Ordering::Greater))
+            .min_by(|a, b| {
+                a.0.partial_cmp(&b.0)
+                    .unwrap_or(Ordering::Greater)
+                    .then_with(|| b.2.cmp(&a.2)) // Ensure greatest group_2 index preference
+            })
             .unwrap_or_else(|| panic!("Shortest distance not found"))
     }
-
-    fn get_shortest_distance_with_backtrack(
+    pub fn get_shortest_distance_with_backtrack(
         &self,
         individual: &Vec<usize>,
         start_idx: usize,
         end_idx: usize,
     ) -> (usize, usize, usize) {
-        let distances_view: ArrayView2<f64> = self.distances.view();
+        let distances_view = self.distances.view();
 
-        let distances = distances_view.slice(s![..=start_idx, individual[end_idx]]);
+        // Collect distances from the start group to the end point
+        let distances_slice: Vec<f64> = individual[..=start_idx]
+            .iter()
+            .map(|&idx| distances_view[[idx, individual[end_idx]]])
+            .collect();
 
-        // Find the minimum distance and its index (with error handling)
-        let (nearest_idx, &_) = distances
+        // Find the minimum distance and its index
+        let (nearest_idx, _) = distances_slice
             .iter()
             .enumerate()
             .min_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(Ordering::Greater))
-            .unwrap_or_else(|| panic!("Error: no distances found"));
+            .expect("Error: no distances found");
 
         // Get the intermediate points for the nearest group and the next group
         let group_1 = &self

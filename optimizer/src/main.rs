@@ -1,3 +1,4 @@
+use bincode;
 use std::path::PathBuf;
 use std::{
     env,
@@ -5,7 +6,6 @@ use std::{
     io::{self, Read, Write},
 };
 use structopt::StructOpt;
-
 use svg2gcode::tsp_solver;
 
 #[derive(Debug, StructOpt)]
@@ -18,6 +18,16 @@ struct Opt {
     /// File path to G-Code output
     #[structopt(long)]
     output: PathBuf,
+}
+
+fn write_output_file(file_content: Vec<u8>, output_file_path: PathBuf) -> io::Result<()> {
+    // Open the output file
+    let mut output_file = File::create(output_file_path)?;
+
+    // Write the binary content to the output file
+    output_file.write_all(&file_content)?;
+
+    Ok(())
 }
 
 fn main() -> io::Result<()> {
@@ -42,13 +52,15 @@ fn main() -> io::Result<()> {
     // println!("Input file content:\n{}", input_content);
 
     // Call the TSP solver function to optimize the G-Code
-    let optimized_content: String = tsp_solver(input_content);
+    let (solution_data, backtrack_data) = tsp_solver(input_content, &opt.output);
 
-    // Open the output file
-    let mut output_file = File::create(&opt.output)?;
+    // Take the output file directory and append the file name to it
+    let solution_output_file: PathBuf = opt.output.join("solution.bin");
+    let backtrack_output_file: PathBuf = opt.output.join("backtrack.bin");
 
-    // Write the optimized G-Code to the output file
-    output_file.write_all(optimized_content.as_bytes())?;
+    // Write binary output to the output file
+    write_output_file(solution_data, solution_output_file)?;
+    write_output_file(backtrack_data, backtrack_output_file)?;
 
     Ok(())
 }

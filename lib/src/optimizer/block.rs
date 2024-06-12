@@ -1,16 +1,17 @@
+use serde::{Deserialize, Serialize};
 use std::ops::Sub;
 
-#[derive(Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 
 pub struct GCodePoint {
     // X coordinate of the point
-    x: f64,
+    pub x: f64,
     // Y coordinate of the point
-    y: f64,
+    pub y: f64,
     // Z coordinate of the point
-    z: Option<f64>,
+    pub z: Option<f64>,
     // F coordinate of the point
-    f: Option<f64>,
+    pub f: Option<f64>,
 }
 
 impl GCodePoint {
@@ -44,7 +45,7 @@ pub fn distance(a: &GCodePoint, b: &GCodePoint) -> f64 {
     ((a.x - b.x).powi(2) + (a.y - b.y).powi(2)).sqrt()
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GCodeBlock {
     // Vector of points in the block
     pub points: Vec<GCodePoint>,
