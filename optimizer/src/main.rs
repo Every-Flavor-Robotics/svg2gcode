@@ -54,9 +54,11 @@ fn main() -> io::Result<()> {
     // Call the TSP solver function to optimize the G-Code
     let (solution_data, backtrack_data) = tsp_solver(input_content, &opt.output);
 
+
     // Take the output file directory and append the file name to it
-    let solution_output_file: PathBuf = opt.output.join("solution.bin");
-    let backtrack_output_file: PathBuf = opt.output.join("backtrack.bin");
+    let input_file_name = opt.input.file_stem().unwrap().to_str().unwrap();
+    let solution_output_file: PathBuf = opt.output.join(format!("{}_solution.bin", input_file_name));
+    let backtrack_output_file: PathBuf = opt.output.join(format!("{}_backtrack.bin", input_file_name));
 
     // Write binary output to the output file
     write_output_file(solution_data, solution_output_file)?;
