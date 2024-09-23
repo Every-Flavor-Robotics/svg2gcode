@@ -53,7 +53,7 @@ struct Opt {
     /// Use `-` to export to standard out.
     #[structopt(long)]
     export: Option<PathBuf>,
-    /// Coordinates for the bottom left corner of the machine
+    /// Coordinates for the bottom left corner of the machine. Include units to override the default pixels.
     #[structopt(long)]
     origin: Option<String>,
     /// Override the width and height of the SVG (i.e. 210mm,297mm)
@@ -129,19 +129,36 @@ fn main() -> io::Result<()> {
         }
         {
             if let Some(origin) = opt.origin {
+                let dpi = settings.conversion.dpi;
+
                 for (i, dimension_origin) in origin
                     .split(',')
                     .map(|point| {
                         if point.is_empty() {
-                            Default::default()
+                            None
                         } else {
-                            point.parse::<f64>().expect("could not parse coordinate")
+                            // Parse the point as a length (with units)
+                            let length = LengthListParser::from(point)
+                                .next()
+                                .transpose()
+                                .expect("could not parse origin coordinate");
+
+                            // Convert to pixels
+                            length.map(|l| match l.unit {
+                                svgtypes::LengthUnit::Mm => l.number * dpi / 25.4, // Convert mm to pixels
+                                svgtypes::LengthUnit::In => l.number * dpi,         // Convert inches to pixels
+                                svgtypes::LengthUnit::Px => l.number,               // Already in pixels
+                                svgtypes::LengthUnit::Cm => l.number * dpi / 2.54,  // Convert cm to pixels
+                                svgtypes::LengthUnit::Pt => l.number * dpi / 72.0,  // Convert points to pixels
+                                _ => l.number, // Default to raw number if the unit is unsupported
+                            })
                         }
                     })
                     .take(2)
                     .enumerate()
                 {
-                    settings.conversion.origin[i] = Some(dimension_origin);
+                    // Set the parsed and converted origin value in pixels
+                    settings.conversion.origin[i] = dimension_origin;
                 }
             }
         }
