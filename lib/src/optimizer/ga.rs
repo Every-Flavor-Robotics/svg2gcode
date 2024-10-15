@@ -606,7 +606,7 @@ impl GeneticAlgorithm {
 
                 // Calculate the sum for this iteration
                 100.0 * min_distance / individual.len() as f64
-                    + 40.0 * backtrack_cost as f64 / self.num_total_points as f64
+                    + 15.0 * backtrack_cost as f64 / self.num_total_points as f64
             })
             .sum();
 
